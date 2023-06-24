@@ -1,0 +1,47 @@
+﻿@page "/fetchdata"
+@using MudDataGridEfCore.Data
+@using Microsoft.EntityFrameworkCore
+@inject UserDbContext DbContext
+
+<PageTitle>Weather forecast</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudText Typo="Typo.h4" Class="my-8">Cancellation Reasons</MudText>
+    
+    <MudDataGrid T="UserEntity" ServerData="@LoadDataAsync" Hover="true" FilterMode="DataGridFilterMode.Simple" Filterable="true" SortMode="SortMode.Single">
+        <Columns>
+            <PropertyColumn Title="Id" Property="x => x.Id" Sortable="false" Filterable="true" />
+            <PropertyColumn Title="FirstName" Property="x => x.FirstName" Sortable="false" Filterable="true" />
+            <PropertyColumn Title="LastName" Property="x => x.LastName" Sortable="false" Filterable="true" />
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="UserEntity" />
+        </PagerContent>
+    </MudDataGrid>
+</MudContainer>
+
+@code {
+    private async Task<GridData<UserEntity>> LoadDataAsync(GridState<UserEntity> state)
+    {
+        var query = DbContext.Users.AsQueryable();
+        if (state.FilterDefinitions.Any())
+        {
+            foreach (var filter in state.FilterDefinitions)
+            {
+                if (filter is FilterDefinition<UserEntity> filterDefinition)
+                {
+                    query = query.Where(filterDefinition.GenerateFilterExpression());
+                }
+            }
+        }
+        
+        var totalItems = await query.CountAsync();
+        var items = await query.Skip(state.Page * state.PageSize).Take(state.PageSize).ToListAsync();
+
+        return new GridData<UserEntity>
+        {
+            Items = items,
+            TotalItems = totalItems
+        };
+    }
+}
